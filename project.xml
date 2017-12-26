@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project>
+	
+	<meta title="Starling Demo Haxe" package="com.starlingdemo.haxe" version="1.0.0" company="zacdevon" />
+	<app main="Main" file="StarlingDemoHaxe" path="bin" />
+	
+	<source path="src" />
+	
+	<haxelib name="starling" />
+	<haxelib name="openfl" />
+	<haxelib name="actuate" />
+	
+</project>
