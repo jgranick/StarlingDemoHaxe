@@ -2,11 +2,19 @@ package;
 
 import flash.Lib;
 
+#if air
 import flash.desktop.NativeApplication;
+#end
 import flash.display.BitmapData;
+import flash.display.Sprite in FlashSprite;
 import flash.geom.Rectangle;
 import flash.system.Capabilities;
-import flash.text.TextFormat;
+import flash.text.TextField in FlashTextField;
+import flash.text.TextFormat in FlashTextFormat;
+
+import motion.easing.IEasing;
+import motion.easing.Quad in EaseQuad;
+import motion.Actuate;
 
 import starling.core.Starling;
 import starling.display.*;
@@ -14,14 +22,13 @@ import starling.events.Event;
 import starling.events.Touch;
 import starling.events.TouchEvent;
 import starling.text.TextField;
+#if (starling >= "2.0.0")
+import starling.text.TextFormat;
+#end
 import starling.textures.Texture;
 
-class Main extends Sprite {
-
-	static function main() {
-		Lib.current.addChild(new Main());
-		
-	}
+class Main extends FlashSprite {
+	
 	
 	public static var _stage:flash.display.Stage;
 	
@@ -60,12 +67,12 @@ class Main extends Sprite {
 	private function OnStaged(e:Event) {
 		*/
 	
-		this._stage = this.stage;
+		Main._stage = this.stage;
 		_stage.align = "TL";
 		_stage.scaleMode = "noScale";
 		
-		Sys.init(_stage);
-		Tween.init(_stage);
+		//Sys.init(_stage);
+		//Tween.init(_stage);
 		
 		_stage.frameRate = 60;
 		
@@ -78,23 +85,25 @@ class Main extends Sprite {
 		_starling.enableErrorChecking = Capabilities.isDebugger;
 		_starling.start();
 		
-		if (Sys.isMobile) {
+		//if (Sys.isMobile) {
+		#if mobile
 			
 			NativeApplication.nativeApplication.addEventListener(Event.ACTIVATE, OnACTIVATE);
 			NativeApplication.nativeApplication.addEventListener(Event.DEACTIVATE, OnDEACTIVATE);
 		
-		}
+		#end
+		//}
 	}
 	
-	private function OnACTIVATE(e:Dynamic) {
+	private function OnACTIVATE(e:Event):Void {
 		_starling.start();
 	}
-	private function OnDEACTIVATE(e:Dynamic) {
+	private function OnDEACTIVATE(e:Event):Void {
 		_starling.stop(true);
 	}
-	private function OnResized(e:Dynamic) {
+	private function OnResized(e:Event):Void {
 		
-		if (_starling) {
+		if (_starling != null) {
 			
 			// resize starling to match screen size
 			var w:Int = _stage.stageWidth;
@@ -110,7 +119,7 @@ class Main extends Sprite {
 		}
 		
 	}
-	private function OnStarlingInit(e:starling.events.Event) {
+	private function OnStarlingInit(e:Event):Void {
 		
 		OnResized(null);
 		
@@ -129,20 +138,24 @@ class Main extends Sprite {
 			
 			// next page in
 			nextPage.x = curStageW;
-			Tween.Start(nextPage, 0.15, { x: 0, delay:renderTime }, easeType.QuadInOut );
+			//Tween.Start(nextPage, 0.15, { x: 0, delay:renderTime }, easeType.QuadInOut );
+			Actuate.tween (nextPage, 0.15, { x: 0 }).delay (renderTime).ease (EaseQuad.easeInOut);
 			
 			// cur page out
-			Tween.Start(curPage, 0.15, { x: -curStageW, delay:renderTime, onCompleteDestroy:true }, easeType.QuadInOut);
+			//Tween.Start(curPage, 0.15, { x: -curStageW, delay:renderTime, onCompleteDestroy:true }, easeType.QuadInOut);
+			if (curPage != null) Actuate.tween (curPage, 0.15, { x: -curStageW }).delay (renderTime).ease (EaseQuad.easeInOut);
 			
 		}
 		if (effect == "fade"){
 			
 			// next page in
 			nextPage.alpha = 0;
-			Tween.Start(nextPage, 0.2, { alpha:1, delay:renderTime }, 0);
+			//Tween.Start(nextPage, 0.2, { alpha:1, delay:renderTime }, 0);
+			Actuate.tween (nextPage, 0.2, { alpha: 1 }).delay (renderTime);
 			
 			// cur page out
-			Tween.Start(curPage, 0.2, { onCompleteDestroy:true }, 0);
+			//Tween.Start(curPage, 0.2, { onCompleteDestroy:true }, 0);
+			if (curPage != null) Actuate.tween (curPage, 0.2, { alpha: 0 }).delay (renderTime);
 			
 		}
 		
@@ -151,7 +164,7 @@ class Main extends Sprite {
 	}
 	private function RenderPage():Sprite {
 		
-		var infos:Array = [
+		var infos = [
 			{name:"Slacker Radio", 		desc:"25.5K downloads", 	rating:3.5,		stats:[3,4,3,2,5]},
 			{name:"Spotify", 			desc:"19M downloads", 		rating:4.4,		stats:[4, 5, 4, 4, 5]},
 			{name:"MyFitnessPal", 		desc:"200K downloads", 		rating:4.0,		stats:[3, 4, 2, 2, 5]},
@@ -162,24 +175,25 @@ class Main extends Sprite {
 			{name:"Pocket Casts", 		desc:"120K downloads", 		rating:2.0,		stats:[3, 1, 2, 1]}
 		];
 		
-		infos = A.Shuffle(infos);
+		//infos = A.Shuffle(infos);
 		
-		var holder:Sprite = new Sprite(cast(_starling.root, DisplayObjectContainer));
+		var holder:Sprite = new Sprite ();
+		cast (_starling.root, DisplayObjectContainer).addChild (holder); // is this right?
 		
 		var x:Int = 20;
 		var y:Int = 20;
 		var w:Int = pageWidth - (x * 2);
 		
 		// DRAW CARDS
-		var cards:Array = [];
+		var cards = [];
 		for (info in infos) {
 			var card:Sprite = DrawCard(holder, info, x, y, w);
-			y += card.height + 10;
+			y += Std.int(card.height) + 10;
 			cards.push(card);
 		}
 		
 		// DRAW BACK
-		DrawRect(holder, 0, 0, pageWidth, y + 20, grey).swapToBottom();
+		DrawRect(holder, 0, 0, pageWidth, y + 20, grey)/*.swapToBottom()*/;
 		
 		/*// RENDER NOW SO FX COMES LATER
 		_starling.render();
@@ -204,7 +218,7 @@ class Main extends Sprite {
 		
 		// resize holder by width to match screen size
 		textScale = (curStageW / pageWidth);
-		if (curPage) {
+		if (curPage != null) {
 			curPage.scale = (curStageW / pageWidth);
 		}
 	}
@@ -250,15 +264,15 @@ class Main extends Sprite {
 	}
 	public function DrawStats(parent:Sprite, data:Array<Float>, x:Int, y:Int, w:Int, h:Int, color:Int, barw:Int) {
 		var gap:Int = 5;
-		var gapw:Int = (w / data.length);
+		var gapw:Int = Std.int(w / data.length);
 		
 		for (s in 0...data.length) {
-			var stat:Int = data[s];
+			var stat = data[s];
 			
-			var yo:Int = h * (stat / 5);
+			var yo:Int = Std.int (h * (stat / 5));
 			var bar:Quad = DrawRect(parent, x, y + (h - yo), barw, yo, color, true);
 			
-			AnimateScaleUpward(bar, 0.5, easeType.QuadOut);
+			AnimateScaleUpward(bar, 0.5, EaseQuad.easeOut);
 			
 			x += gapw;
 		}
@@ -267,7 +281,8 @@ class Main extends Sprite {
 		if (w <= 0 || h <= 0) {
 			return null;
 		}
-		var q:Quad = new Quad(w, h, color, parent);
+		var q:Quad = new Quad(w, h, color/*, parent != null*/);
+		parent.addChild(q); // is this right?
 		q.x = x;
 		q.y = y;
 		return q;
@@ -276,11 +291,15 @@ class Main extends Sprite {
 		if (w <= 0) {
 			return null;
 		}
-		var fmt:TextFormat = new TextFormat("Roboto", fontsize, color, "left", "center", bold, italic);
-		var tf:TextField = new TextField(w, fontsize * 2, text, fmt, parent);
+		//var fmt:FlashTextFormat = new FlashTextFormat("Roboto", fontsize, color, "left", "center", bold, italic);
+		var fmt:TextFormat = new TextFormat("Roboto", fontsize, color, "left", "center");
+		fmt.bold = bold;
+		fmt.italic = italic;
+		var tf:TextField = new TextField(w, fontsize * 2, text, fmt/*, parent*/);
+		parent.addChild (tf); //?
 		tf.x = x;
 		tf.y = y;
-		tf.wordWrap = multiline;
+		//tf.wordWrap = multiline;
 		return tf;
 	}
 	public function DrawTextImage(parent:Sprite, x:Int, y:Int, w:Int, color:Int, fontsize:Int, text:String, bold:Bool = false, italic:Bool = false, multiline:Bool = false):Image {
@@ -289,8 +308,8 @@ class Main extends Sprite {
 		}
 		
 		// NEW TF
-		var fmt:TextFormat = new TextFormat("Roboto", fontsize, color, bold, italic, null, null, null, "left");
-		var tf:flash.display.TextField = new flash.display.TextField();
+		var fmt:FlashTextFormat = new FlashTextFormat("Roboto", fontsize, color, bold, italic, null, null, null, "left");
+		var tf:FlashTextField = new FlashTextField();
 		tf.width = w;
 		tf.height = fontsize * 2;
 		tf.defaultTextFormat = fmt;
@@ -299,13 +318,13 @@ class Main extends Sprite {
 		//tf.embedFonts = true;
 		
 		// NEW BITMAP
-		var minW:Int = N.N_Min(tf.width, tf.textWidth + 10);
-		var minH:Int = N.N_Min(tf.height, tf.textHeight + 10);
+		var minW:Int = Std.int (Math.min(tf.width, tf.textWidth + 10));
+		var minH:Int = Std.int (Math.min(tf.height, tf.textHeight + 10));
 		if (minW <= 0 || minH <= 0){
 			return null;
 		}
 		tf.scaleX = tf.scaleY = textScale;
-		var bitmapData:BitmapData = CaptureToBitmap(tf, true, minW * textScale, minH * textScale, true);
+		var bitmapData:BitmapData = CaptureToBitmap(tf, true, Std.int(minW * textScale), Std.int (minH * textScale), true);
 		
 		// NEW STARTEXTURE
 		//skip Texture.fromBitmapData() because we don't want
@@ -344,15 +363,16 @@ class Main extends Sprite {
 	}
 	
 	/** scale an object upward (growing up) */
-	public function AnimateScaleUpward(bar:DisplayObject, duration:Float, ease:Int) {
+	public function AnimateScaleUpward(bar:DisplayObject, duration:Float, ease:IEasing) {
 		
-		var barY:Int = bar.y;
-		var barH:Int = bar.height;
+		var barY:Int = Std.int (bar.y);
+		var barH:Int = Std.int (bar.height);
 		
 		bar.y = barY + barH;
 		bar.height = 0;
 		
-		Tween.Start(bar, duration, {y:barY, height:barH}, ease);
+		//Tween.Start(bar, duration, {y:barY, height:barH}, ease);
+		Actuate.tween (bar, duration, { y: barY, height: barH }).ease (ease);
 		
 	}
 	/** draw animated circle like Android Material Design */
@@ -361,22 +381,26 @@ class Main extends Sprite {
 		// draw animated circle like Android Material Design
 		
 		var mask:Quad = DrawRect(holder, x, y, w, h, 0x000000);
-		var circ:Canvas = DrawCircle(holder, 0, 0, w/2, 0x000000);
+		var circ:Canvas = DrawCircle(holder, 0, 0, Std.int(w/2), 0x000000);
 		circ.mask = mask;
 		
 		circ.alpha = 0.2;
 		circ.scale = 0;
 		
-		circ.position = touch.getLocation(holder);
+		//circ.position = touch.getLocation(holder);
 		
 		// 2nd last item so below all text content
-		circ.swapToBottom();
-		circ.swapOneUp();
+		//circ.swapToBottom();
+		//circ.swapOneUp();
 		
-		Tween.Start(circ, 0.2, { scale:1, alpha:0, onCompleteDestroy:true }, 0);
-		Tween.Start(mask, 0.3, { onCompleteDestroy:true });
+		//Tween.Start(circ, 0.2, { scale:1, alpha:0, onCompleteDestroy:true }, 0);
+		//Tween.Start(mask, 0.3, { onCompleteDestroy:true });
 		
-		Tween.DoLater(0.2, ShowNextPage);
+		//Tween.DoLater(0.2, ShowNextPage);
+		
+		Actuate.tween (circ, 0.2, { scale: 1, alpha: 0 });
+		//Actuate.tween (mask, 0.3, { alpha: 0 });
+		Actuate.timer (0.2).onComplete (ShowNextPage);
 		
 	}
 	
